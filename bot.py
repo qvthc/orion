@@ -50,11 +50,34 @@ async def ping(ctx):
   await ctx.send(f"🏓 Pong!")
 
 @client.command()
-async def nickname(ctx, *, newname: str):
-    try:
-        await ctx.author.edit(nick=newname)
-        await yes(ctx.message)
-    except (discord.Forbidden, discord.NotFound, discord.HTTPException, discord.ClientException) as e:
+async def nickname(ctx, *, newname: str = ""):
+    if newname == "":
+        try:
+            await ctx.author.edit(nick=None)
+            await yes(ctx.message)
+        except discord.Forbidden:
+            await no(ctx.message)
+    else:
+        try:
+            await ctx.author.edit(nick=newname)
+            await yes(ctx.message)
+        except (discord.Forbidden, discord.NotFound, discord.HTTPException, discord.ClientException) as e:
+            await no(ctx.message)
+
+@client.command()
+async def mod(ctx, type: str, user: discord.Member):
+    if ctx.channel is not None:
+        modtype = type.lower()
+    
+        if modtype == "ban":
+            await user.ban()
+    
+        if modtype == "kick":
+            await user.kick()
+
+        if modtype == "unban":
+            await user.unban()
+    else:
         await no(ctx.message)
 
 @client.command()
@@ -105,7 +128,7 @@ async def dm(ctx, id: int, *, message: str):
       await no(ctx.message)
 
 @client.command()
-async def urban(ctx, *, word: str):
+async def dictionary(ctx, *, word: str):
     params = {"term": word}
     async with httpx.AsyncClient() as client:
         try:
@@ -126,7 +149,7 @@ async def urban(ctx, *, word: str):
             await ctx.send(f"An error occurred: {e}")
 
 @client.command()
-async def download(ctx, url):
+async def youtube(ctx, url):
     if not url:
         await ctx.send("Please provide a YouTube video URL.")
         return
@@ -196,6 +219,66 @@ async def walloftext(ctx, count: int):
     
     await ctx.message.delete()
     await ctx.send(wall(count))
+
+@client.command()
+async def fetchpfp(ctx, userid: int):
+    if userid == None:
+        await no(ctx.message)
+    await yes(ctx.message)
+    member = await client.fetch_user(userid)
+    pfp = member.avatar_url
+    await ctx.send(pfp)
+
+@client.command()
+async def channelid(ctx):
+    try:
+        await ctx.send(ctx.channel.id)
+        await yes(ctx.message)
+    except discord.Forbidden:
+        await no(ctx.message)
+
+@client.command()
+async def userid(ctx, user: discord.Member):
+    try:
+        await ctx.send(user.id)
+        await yes(ctx.message)
+    except discord.Forbidden:
+        await no(ctx.message)
+
+@client.command()
+async def serverinfo(ctx):
+    server = ctx.guild
+    roles = server.roles
+    bot_count = len([member for member in server.members if member.bot])
+    server_icon_link = str(server.icon_url)
+    server_banner_link = str(server.banner_url) if server.banner_url else "None"
+    server_boosts = server.premium_subscription_count
+
+    contents = f"""
+## Info for {server.name}
+{ctx.author.name} / {ctx.author.id}
+```    
+MEMBERS
+{server.member_count}
+    
+ROLES
+{len(roles)}
+    
+BOTS
+{bot_count}
+    
+SERVER ICON LINK
+{server_icon_link}
+    
+SERVER BANNER LINK
+{server_banner_link}
+    
+SERVER BOOSTS
+{server_boosts}
+```
+    """
+    await ctx.send(contents)
+
 
 
 ####################################### LOGIN ########
