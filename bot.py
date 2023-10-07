@@ -12,6 +12,9 @@
 #  `--`---'    `--`--''   `--`-----' `--`        `--`-`--`--'`--`-`  `--`---'  
 #
 
+# THIS IS DISCONTINUED UNTIL FURTHER NOTICE!
+
+
 import discord, json, asyncio, datetime, requests, httpx, pytube, sys, subprocess
 from discord.ext import commands
 from pytube import YouTube
