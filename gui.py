@@ -1,6 +1,5 @@
 from pathlib import Path
 import subprocess
-
 from tkinter import Tk, Canvas, Entry, Text, Button, PhotoImage
 
 OUTPUT_PATH = Path(__file__).parent
@@ -11,19 +10,19 @@ def relative_to_assets(path: str) -> Path:
 
 window = Tk()
 window.geometry("600x388")
-window.configure(bg = "#1B1B1B")
+window.configure(bg="#1B1B1B")
 
 canvas = Canvas(
     window,
-    bg = "#1B1B1B",
-    height = 388,
-    width = 600,
-    bd = 0,
-    highlightthickness = 0,
-    relief = "ridge"
+    bg="#1B1B1B",
+    height=388,
+    width=600,
+    bd=0,
+    highlightthickness=0,
+    relief="ridge"
 )
 
-canvas.place(x = 0, y = 0)
+canvas.place(x=0, y=0)
 canvas.create_rectangle(
     62.0,
     239.0,
@@ -62,25 +61,7 @@ canvas.create_text(
     anchor="nw",
     text="SOLARIS",
     fill="#FFFFFF",
-    font=("NunitoSans ExtraBold", 25 * -1)
-)
-
-canvas.create_text(
-    412.0,
-    299.0,
-    anchor="nw",
-    text="_worlock.",
-    fill="#FFFFFF",
-    font=("NunitoSans Bold", 21 * -1)
-)
-
-canvas.create_text(
-    423.0,
-    273.0,
-    anchor="nw",
-    text="Logged in as",
-    fill="#696969",
-    font=("NunitoSans Regular", 14 * -1)
+    font=("Inter ExtraBold", 25 * -1)
 )
 
 canvas.create_text(
@@ -89,16 +70,27 @@ canvas.create_text(
     anchor="nw",
     text="| Credentials",
     fill="#696969",
-    font=("NunitoSans Regular", 16 * -1)
+    font=("Inter Regular", 16 * -1)
 )
 
+# Add the "Prefix" label above the second textbox
+canvas.create_text(
+    62.0,
+    207.0,
+    anchor="nw",
+    text="Prefix",
+    fill="#696969",
+    font=("Inter Regular", 16 * -1)
+)
+
+# Add the "Bot Token" label above the first textbox
 canvas.create_text(
     62.0,
     147.0,
     anchor="nw",
-    text="Bot Token",
+    text="Token",
     fill="#696969",
-    font=("NunitoSans Regular", 16 * -1)
+    font=("Inter Regular", 16 * -1)
 )
 
 entry_image_1 = PhotoImage(
@@ -179,8 +171,9 @@ image_1 = canvas.create_image(
     image=image_image_1
 )
 
-photo = PhotoImage(file = relative_to_assets("Icon.png"))
-window.title("Solaris.py Selfbot")
+photo = PhotoImage(file=relative_to_assets("Icon.png"))
+window.title("Orion Client")
 window.iconphoto(False, photo)
 window.resizable(False, False)
+
 window.mainloop()

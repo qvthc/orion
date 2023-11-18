@@ -1,18 +1,5 @@
 #!/python
 
-# 
-#    ,-,--.    _,.---._                ,---.                   .=-.-.  ,-,--.  
-#  ,-.'-  _\ ,-.' , -  `.    _.-.    .--.'  \      .-.,.---.  /==/_ /,-.'-  _\ 
-# /==/_ ,_.'/==/_,  ,  - \ .-,.'|    \==\-/\ \    /==/  `   \|==|, |/==/_ ,_.' 
-# \==\  \  |==|   .=.     |==|, |    /==/-|_\ |  |==|-, .=., |==|  |\==\  \    
-#  \==\ -\ |==|_ : ;=:  - |==|- |    \==\,   - \ |==|   '='  /==|- | \==\ -\   
-#  _\==\ ,\|==| , '='     |==|, |    /==/ -   ,| |==|- ,   .'|==| ,| _\==\ ,\  
-# /==/\/ _ |\==\ -    ,_ /|==|- `-._/==/-  /\ - \|==|_  . ,'.|==|- |/==/\/ _ | 
-# \==\ - , / '.='. -   .' /==/ - , ,|==\ _.\=\.-'/==/  /\ ,  )==/. /\==\ - , / 
-#  `--`---'    `--`--''   `--`-----' `--`        `--`-`--`--'`--`-`  `--`---'  
-#
-
-# THIS IS DISCONTINUED UNTIL FURTHER NOTICE!
 
 
 import discord, json, asyncio, datetime, requests, httpx, pytube, sys, subprocess
@@ -50,7 +37,7 @@ async def delete(message):
 
 @client.command()
 async def ping(ctx):
-  await ctx.send(f"🏓 Pong!")
+  await ctx.reply(f"🏓 Pong!")
 
 @client.command()
 async def nickname(ctx, *, newname: str = ""):
@@ -143,18 +130,18 @@ async def dictionary(ctx, *, word: str):
                 first_definition = definitions[0]
                 definition = first_definition.get("definition", "No definition found.")
                 example = first_definition.get("example", "No example found.")
-                await ctx.send(f"**{word.capitalize()}**\nDefinition: {definition}\nExample: {example}")
+                await ctx.reply(f"> {word.capitalize()}\nDefinition: {definition}\nExample: {example}")
             else:
-                await ctx.send(f"No definitions found for {word}.")
+                await ctx.reply(f"No definitions found for {word}.")
         except httpx.HTTPError:
-            await ctx.send("Failed to fetch word definition from Urban Dictionary API.")
+            await ctx.reply("Failed to fetch word definition from Urban Dictionary API.")
         except Exception as e:
-            await ctx.send(f"An error occurred: {e}")
+            await ctx.reply(f"An error occurred: {e}")
 
 @client.command()
 async def youtube(ctx, url):
     if not url:
-        await ctx.send("Please provide a YouTube video URL.")
+        await ctx.reply("Please provide a YouTube video URL.")
         return
     try:
         yt = YouTube(url)
@@ -163,9 +150,35 @@ async def youtube(ctx, url):
 
         video_stream.download(output_path='downloads', filename='downloaded_video.mp4')
 
-        await ctx.send(file=discord.File(file_path))
+        await ctx.reply(file=discord.File(file_path))
+        await yes(ctx.message)
     except Exception as e:
-        await no()
+        await no(ctx.message)
+
+
+import base64
+@client.command()
+async def base64_encode(ctx, *, string: str):
+    encoded_text = base64.b64encode(string.encode()).decode()
+    await ctx.reply(encoded_text, mention_author=False)
+    await yes(ctx.message)
+    await ctx.message.delete()
+
+@client.command()
+async def base64_decode(ctx, *, string: str):
+    try:
+        encoded_text = base64.b64decode(string.encode()).decode()
+        await ctx.reply(encoded_text, mention_author=False)
+        try:
+            await yes(ctx.message)
+        except:
+            pass
+        await ctx.message.delete()
+    except:
+        try:
+            await no(ctx.message)
+        except:
+            pass
 
 @client.command()
 async def message(ctx, num: int, *, msg: str):
@@ -185,7 +198,7 @@ async def leave(ctx):
 async def membercount(ctx):
     guild = ctx.guild
     memberCount = guild.member_count
-    await ctx.send(f"{memberCount} members")
+    await ctx.reply(f"{memberCount} members")
     await yes(ctx.message)
 
 @client.command()
@@ -221,7 +234,7 @@ async def walloftext(ctx, count: int):
         return pattern
     
     await ctx.message.delete()
-    await ctx.send(wall(count))
+    await ctx.reply(wall(count))
 
 @client.command()
 async def fetchpfp(ctx, userid: int):
@@ -230,12 +243,12 @@ async def fetchpfp(ctx, userid: int):
     await yes(ctx.message)
     member = await client.fetch_user(userid)
     pfp = member.avatar_url
-    await ctx.send(pfp)
+    await ctx.reply(pfp)
 
 @client.command()
 async def channelid(ctx):
     try:
-        await ctx.send(ctx.channel.id)
+        await ctx.reply(ctx.channel.id)
         await yes(ctx.message)
     except discord.Forbidden:
         await no(ctx.message)
@@ -243,7 +256,7 @@ async def channelid(ctx):
 @client.command()
 async def userid(ctx, user: discord.Member):
     try:
-        await ctx.send(user.id)
+        await ctx.reply(user.id)
         await yes(ctx.message)
     except discord.Forbidden:
         await no(ctx.message)
@@ -280,9 +293,25 @@ SERVER BOOSTS
 {server_boosts}
 ```
     """
-    await ctx.send(contents)
+    await ctx.reply(contents)
 
+autoresponder_string = None
+@client.command()
+async def autoresponder(ctx, *, string):
+    global autoresponder_string
+    autoresponder_string = string
+    await ctx.reply(f"Autoresponder string set to: {string}")
 
+@client.event
+async def on_message(message):
+    await client.process_commands(message)  # Process commands first
+
+    global autoresponder_string
+    if isinstance(message.channel, discord.DMChannel) and message.author != client.user:
+        content = message.content.lower()
+        if autoresponder_string and autoresponder_string != "off":
+            await message.channel.send(autoresponder_string)
 
 ####################################### LOGIN ########
 client.run(botToken, bot=False)
+
