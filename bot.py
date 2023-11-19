@@ -1,28 +1,72 @@
-#!/python
+#
+#
+#
+#                                                                       
+#                                                    88           88                                   
+#                                ,d                 ""           88                            ,d     
+#                                88                              88                            88     
+#                                MM88MMM  8b,dPPYba,  88   ,adPPYb,88   ,adPPYba,  8b,dPPYba,  MM88MMM  
+#                                88     88P'   "Y8  88  a8"    `Y88  a8P_____88  88P'   `"8a   88     
+#                                88     88          88  8b       88  8PP"""""""  88       88   88     
+#                                88,    88          88  "8a,   ,d88  "8b,   ,aa  88       88   88,    
+#                                "Y888  88          88   `"8bbdP"Y8   `"Ybbd8"'  88       88   "Y888
+#
+#                                                   </free discord selfbot>
+#                                                        by david <3
+#
+#
 
 
+#                                                        •           
+#                                                        ┓┏┳┓┏┓┏┓┏┓╋┏
+#                                                        ┗┛┗┗┣┛┗┛┛ ┗┛
+#                                                           ┛       
 
-import discord, json, asyncio, datetime, requests, httpx, pytube, sys, subprocess
-from discord.ext import commands
+import discord, json, asyncio, datetime, requests, httpx, pytube, sys, subprocess, pytz
+from discord.ext import commands, tasks
+from datetime import datetime
 from pytube import YouTube
 
-##################################### TERMINAL #######
+#                                                              •    ┓
+#                                                       ╋┏┓┏┓┏┳┓┓┏┓┏┓┃
+#                                                       ┗┗ ┛ ┛┗┗┗┛┗┗┻┗
 
-bash_script_path = './term.sh'
+bash_script_path = './cosmetic/term.sh'
 subprocess.run(['bash', bash_script_path], check=True)
 
-##################################### ARGUMENTS ######
+#                                                      ┏┓┏┓┏┓┓┏┏┳┓┏┓┏┓╋┏
+#                                                      ┗┻┛ ┗┫┗┻┛┗┗┗ ┛┗┗┛
+#                                                          ┛           
 
+timeZone = "US/Eastern"
 botPrefix = sys.argv[1]
 botToken = sys.argv[2]
 urban_dictionary = "https://api.urbandictionary.com/v0/define"
-
+controlServer = "replace_with_a_webhook_for_logs"
 client = commands.Bot(command_prefix=botPrefix, self_bot=True)
+
+
+
+
+
+
+
+
+
+###########################################################################################################################################
 
 gifs = {}
 servers = {}
 
-##################################### FUNCTIONS ######
+def log(msg):
+    headers = {'Content-Type': 'application/json'}
+    embed = {
+        'description': msg,
+        'color': 0x262731,
+    }
+
+    payload = {'embeds': [embed]}
+    response = requests.post(controlServer, headers=headers, data=json.dumps(payload))
 
 async def yes(message):
   await message.add_reaction("✅")
@@ -33,7 +77,47 @@ async def no(message):
 async def delete(message):
   await message.delete()
 
-################################# SELFBOT CODE #######
+def get_time():
+    timezone = pytz.timezone(timeZone)
+
+    utc_now = datetime.utcnow()
+
+    timez = utc_now.replace(tzinfo=pytz.utc).astimezone(timezone)
+    time = timez.strftime('%I:%M %p')
+
+    return time
+
+
+@client.event
+async def on_ready():
+    status_strings = [
+        "🔱 Trident Client - v16",
+        "💻 {guild_count} guilds",
+        "🫂 {friend_count} friends"
+    ]
+    # ^^^^ dont remove it, took me very long :sob:
+    current_status_index = 0
+
+    @tasks.loop(seconds=5)
+    async def change_status():
+        nonlocal current_status_index
+        status_text = status_strings[current_status_index].format(
+            guild_count=len(client.guilds),
+            friend_count=len(client.user.friends)
+        )
+        content = {
+            "custom_status": {"text": status_text}
+        }
+        requests.patch("https://ptb.discordapp.com/api/v6/users/@me/settings", headers={"authorization": botToken}, json=content)
+
+        current_status_index = (current_status_index + 1) % len(status_strings)
+
+    change_status.start()
+
+    @client.event
+    async def on_disconnect():
+        change_status.stop()
+
 
 @client.command()
 async def ping(ctx):
@@ -51,7 +135,9 @@ async def nickname(ctx, *, newname: str = ""):
         try:
             await ctx.author.edit(nick=newname)
             await yes(ctx.message)
+            log(f"Nickname set to {newname} | **{get_time()}**")
         except (discord.Forbidden, discord.NotFound, discord.HTTPException, discord.ClientException) as e:
+            log(f"An error occured while setting a nickname. | **{get_time()}**")
             await no(ctx.message)
 
 @client.command()
@@ -61,12 +147,15 @@ async def mod(ctx, type: str, user: discord.Member):
     
         if modtype == "ban":
             await user.ban()
+            await yes(ctx.message)
     
         if modtype == "kick":
             await user.kick()
+            await yes(ctx.message)
 
         if modtype == "unban":
             await user.unban()
+            await yes(ctx.message)
     else:
         await no(ctx.message)
 
@@ -81,17 +170,41 @@ async def purge(ctx, delete_amount: int):
             await message.delete()
             deleted_count += 1
             await asyncio.sleep(1)
+        await yes(ctx.message)
+    log(f"Purged {delete_amount} messages in {ctx.channel.mention} | **{get_time()}**")
 
 @client.command()
-async def addgif(ctx, name, link):
+async def addlink(ctx, name, link=None):
+    if ctx.message.reference and ctx.message.reference.cached_message:
+        referenced_message = ctx.message.reference.cached_message
+        if referenced_message.content.startswith("http"):
+            link = referenced_message.content
+            name = name.lower()
+    else:
+        if link is None:
+            await no(ctx.message)
+            return
+
     gifs[name] = link
     await yes(ctx.message)
 
 @client.command()
-async def gif(ctx, name):
+async def link(ctx, name):
     if name in gifs:
         await ctx.send(gifs[name])
         await ctx.message.delete()
+    else:
+        await no(ctx.message)
+
+@client.command()
+async def links(ctx):
+    if gifs:
+        links_message = "```\n"
+        for name, link in gifs.items():
+            links_message += f"{name}: {link}\n"
+        links_message += "\n```"
+        await yes(ctx.message)
+        await ctx.send(links_message)
     else:
         await no(ctx.message)
 
@@ -132,16 +245,16 @@ async def dictionary(ctx, *, word: str):
                 example = first_definition.get("example", "No example found.")
                 await ctx.reply(f"> {word.capitalize()}\nDefinition: {definition}\nExample: {example}")
             else:
-                await ctx.reply(f"No definitions found for {word}.")
+                await no(ctx.message)
         except httpx.HTTPError:
-            await ctx.reply("Failed to fetch word definition from Urban Dictionary API.")
+            await no(ctx.message)
         except Exception as e:
-            await ctx.reply(f"An error occurred: {e}")
+            await no(ctx.message)
 
 @client.command()
 async def youtube(ctx, url):
     if not url:
-        await ctx.reply("Please provide a YouTube video URL.")
+        await no(ctx.message)
         return
     try:
         yt = YouTube(url)
@@ -152,6 +265,7 @@ async def youtube(ctx, url):
 
         await ctx.reply(file=discord.File(file_path))
         await yes(ctx.message)
+        log(f"[YouTube Video]({url}) has been downloaded. | **{get_time()}**")
     except Exception as e:
         await no(ctx.message)
 
@@ -192,6 +306,7 @@ async def message(ctx, num: int, *, msg: str):
 
 @client.command()
 async def leave(ctx):
+    log(f"The guild **{ctx.guild.name}** has been removed. | **{get_time()}**")
     await ctx.guild.leave()
 
 @client.command()
@@ -208,21 +323,16 @@ async def leavegroup(ctx):
             await ctx.channel.leave()
         except discord.Forbidden:
             await no(ctx.message)
+        
 
 @client.command()
 async def leavegroups(ctx):
     for channel in client.private_channels:
         if isinstance(channel, discord.GroupChannel):
             await channel.leave()
+    await yes(ctx.message)
+    log(f"All groups have been left. | **{get_time()}**")
 
-@client.command()
-async def kickgroup(ctx):
-    if isinstance(ctx.message.channel, discord.GroupChannel):
-        for recipient in ctx.message.channel.recipients:
-            try:
-                await ctx.message.channel.remove_recipients(recipient)
-            except discord.Forbidden:
-                pass
 
 @client.command()
 async def walloftext(ctx, count: int):
@@ -234,7 +344,7 @@ async def walloftext(ctx, count: int):
         return pattern
     
     await ctx.message.delete()
-    await ctx.reply(wall(count))
+    await ctx.send(wall(count))
 
 @client.command()
 async def fetchpfp(ctx, userid: int):
@@ -296,21 +406,107 @@ SERVER BOOSTS
     await ctx.reply(contents)
 
 autoresponder_string = None
+sent_messages = {}
+
 @client.command()
-async def autoresponder(ctx, *, string):
-    global autoresponder_string
-    autoresponder_string = string
-    await ctx.reply(f"Autoresponder string set to: {string}")
+async def autoresponder(ctx, *, strings):
+    global autoresponder_string, sent_messages
+    string = f"""
+*Autoresponder - Active since **{get_time()}***
+
+{strings}
+"""
+    if strings.lower() != "off":
+        autoresponder_string = string
+    else:
+        autoresponder_string = "off"
+
+    sent_messages = {}
+    await yes(ctx.message)
+    log(f"Autoresponder has been changed/activated. | **{get_time()}**")
 
 @client.event
 async def on_message(message):
-    await client.process_commands(message)  # Process commands first
+    await client.process_commands(message)
 
-    global autoresponder_string
+    global autoresponder_string, sent_messages
     if isinstance(message.channel, discord.DMChannel) and message.author != client.user:
-        content = message.content.lower()
-        if autoresponder_string and autoresponder_string != "off":
+        user_id = message.author.id
+
+        if autoresponder_string and autoresponder_string != "off" and user_id not in sent_messages:
             await message.channel.send(autoresponder_string)
+            sent_messages[user_id] = True
+            log(f"Autoresponder triggered for {message.author.mention} @ {message.jump_url} | **{get_time()}**")
+
+calories = 0
+protein = 0
+
+@client.command()
+async def track(ctx, type: str, amount: int = 1):
+    global calories
+    global protein
+
+    type_of_request = type.lower()
+    if type_of_request == "cal" or type_of_request == "calories":
+        calories = calories + amount
+        await yes(ctx.message)
+
+    if type_of_request == "protein":
+        protein = protein + amount
+        await yes(ctx.message)
+
+    if type_of_request == "clear" or type_of_request == "wipe" or type_of_request == "new":
+        calories = 0
+        protein = 0
+
+    if type_of_request == "summary" or type_of_request == "today" or type_of_request == "total" or type_of_request == "list":
+        await ctx.reply(f"""
+## Diet Tracker
+**{calories}** calories | **{protein}**g protein
+""")
+
+
+import os
+
+@client.command()
+async def upload(ctx, name):
+    if not ctx.message.attachments:
+        await no(ctx.message)
+        return
+
+    attachment = ctx.message.attachments[0]
+    file_path = os.path.join("files", name)
+
+    await attachment.save(file_path)
+    await yes(ctx.message)
+
+@client.command()
+async def send(ctx, name):
+    file_path = os.path.join("files", name)
+
+    if os.path.exists(file_path):
+        file = discord.File(file_path)
+        await ctx.send(file=file)
+    else:
+        await no(ctx.message)
+
+@client.command()
+async def uploads(ctx):
+    files_directory = "files"
+    files_list = [f for f in os.listdir(files_directory) if os.path.isfile(os.path.join(files_directory, f))]
+    
+    files_formatted = "\n".join(files_list)
+    response = f"```\n{files_formatted}\n```"
+
+    await ctx.send(response)
+
+
+
+
+
+
+
+
 
 ####################################### LOGIN ########
 client.run(botToken, bot=False)
