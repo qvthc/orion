@@ -21,9 +21,4 @@ text="
 ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠉⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
 
 "
-
-while true; do
-    clear
-    echo -e "${light_blue}${text}${reset}"
-    sleep 0.3
-done
+echo -e "${light_blue}${text}${reset}"
